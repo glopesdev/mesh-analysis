@@ -45,7 +45,7 @@ def timeline(frames,freq=200):
     ids = np.unique((f.id for f in frames))
     channelmap = dict(((x,i) for i,x in enumerate(ids)))
     nsamples = (maxtime - mintime + 1) * freq
-    result = np.zeros((nsamples,len(ids),TunaDataFrame._NumChannels_))
+    result = np.full((nsamples,len(ids),TunaDataFrame._NumChannels_),np.NaN)
     for frame in frames:
         i = channelmap[frame.id]
         t = (frame.second - mintime) * freq + frame.counter
