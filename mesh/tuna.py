@@ -29,6 +29,10 @@ class TunaDataFrame:
         self.counter = message[7]
         self.data = message[8:self._MessageLength_].view(dtype=np.int16)\
                     .reshape((self._NumSamples_,self._NumChannels_))
+                    
+def fromfile(name):
+    data = np.fromfile(name,dtype=np.uint8)
+    return frombuffer(data)
         
 def frombuffer(data):
     frames = []
