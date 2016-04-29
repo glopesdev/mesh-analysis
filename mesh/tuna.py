@@ -49,9 +49,17 @@ def timeline(frames,freq=200):
     ids = np.unique((f.id for f in frames))
     channelmap = dict(((x,i) for i,x in enumerate(ids)))
     nsamples = (maxtime - mintime + 1) * freq
-    result = np.full((nsamples,len(ids),TunaDataFrame._NumChannels_),np.NaN)
+    adc = np.full((nsamples,len(ids),TunaDataFrame._NumChannels_),np.NaN)
+    state = np.full((nsamples / 4,len(ids),7),np.NaN)
     for frame in frames:
         i = channelmap[frame.id]
         t = (frame.second - mintime) * freq + frame.counter
-        result[t:t+TunaDataFrame._NumSamples_,i,:] = frame.data
-    return result, channelmap
+        adc[t:t+TunaDataFrame._NumSamples_,i,:] = frame.data
+        state[t/4,i,:] = [frame.id,
+                          frame.sync,
+                          frame.button,
+                          frame.aligned,
+                          frame.error,
+                          frame.second,
+                          frame.counter]
+    return adc, state, channelmap
