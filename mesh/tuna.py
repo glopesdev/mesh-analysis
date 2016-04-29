@@ -46,7 +46,7 @@ def frombuffer(data):
 def timeline(frames,freq=200):
     mintime = min(frames,key=lambda x:x.second).second
     maxtime = max(frames,key=lambda x:x.second).second
-    ids = np.unique((f.id for f in frames))
+    ids = np.unique([f.id for f in frames])
     channelmap = dict(((x,i) for i,x in enumerate(ids)))
     nsamples = (maxtime - mintime + 1) * freq
     adc = np.full((nsamples,len(ids),TunaDataFrame._NumChannels_),np.NaN)
