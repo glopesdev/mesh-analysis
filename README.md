@@ -37,5 +37,5 @@ In Python, these are returned from the TunaDataFrame list as [adc, state,
 channelmap] by the function 'timeline' and in MATLAB these are returned as
 [nd_array, state, channelmap] by the function 'packet_to_ndarray'.
 
-
+The button reading is at 1/4 of the sampling rate, i.e., if you use the default 100Hz sample rate the button is read each 40 milliseconds.
 
