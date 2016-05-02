@@ -1,6 +1,9 @@
 % packet_to_ndarray
 % 
 % a simple function to convert a packet structarray to an ND array
+
+% Author: Eric E J DeWitt
+%
 function [nd_array, state, channelmap] = packet_to_ndarray(packet)
 % frequency should be encoded in the data!?
 %

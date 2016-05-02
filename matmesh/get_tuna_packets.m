@@ -1,6 +1,10 @@
 %
 % basic import function for tuna data
 %
+%
+
+% Author: Eric E J DeWitt
+%
 function [mesh_packet] = get_tuna_packets(stream, num_channels, num_samples)
     % internal vars to be externalized?
     if nargin < 3
