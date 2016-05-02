@@ -18,6 +18,8 @@ class TunaDataFrame:
     _NumChannels_ = 9
     
     def __init__(self, message):
+        ## I thnk there is implict casting being done via the bitshifts
+        ## this is opaque and should be made explicit
         messageId = message[1] | message[2] << 8
         self.id = messageId & self._IdMask_
         self.sync = (messageId & self._SyncFlag_) != 0;
@@ -44,12 +46,14 @@ def frombuffer(data):
     return frames
     
 def timeline(frames,freq=200):
+    # I think there is implict casting going on here too?
     mintime = min(frames,key=lambda x:x.second).second
     maxtime = max(frames,key=lambda x:x.second).second
     ids = np.unique([f.id for f in frames])
     channelmap = dict(((x,i) for i,x in enumerate(ids)))
     nsamples = (maxtime - mintime + 1) * freq
     adc = np.full((nsamples,len(ids),TunaDataFrame._NumChannels_),np.NaN)
+    # why 7!?
     state = np.full((nsamples // 4,len(ids),7),np.NaN)
     for frame in frames:
         i = channelmap[frame.id]
