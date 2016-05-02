@@ -5,17 +5,19 @@
 
 % Author: Eric E J DeWitt
 %
-function [mesh_packet] = get_tuna_packets(stream, num_channels, num_samples)
+function [mesh_packet] = get_tuna_packets(stream, num_channels, num_samples, frequency)
     % internal vars to be externalized?
+    if nargin < 4
+        frequency = 200;
+    end
     if nargin < 3
         num_samples = 4;
     end
     if nargin < 2
         num_channels = 9;
     end
-    frequency = 200;
-    message_length = 80;
-    buffer_size = 100;
+    message_length = 80; % is this fixed always?
+    buffer_size = 100;   % this is our internal read buffer.
     
     % We assume that stream is a character vector representing a file path &
     % name or that it is a file handle already opened externally. Only very
