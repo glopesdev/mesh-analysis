@@ -5,11 +5,8 @@
 
 % Author: Eric E J DeWitt
 %
-function [mesh_packet] = get_tuna_packets(stream, num_channels, num_samples, frequency)
+function [mesh_packet] = get_tuna_packets(stream, num_channels, num_samples)
     % internal vars to be externalized?
-    if nargin < 4
-        frequency = 200;
-    end
     if nargin < 3
         num_samples = 4;
     end
@@ -17,7 +14,10 @@ function [mesh_packet] = get_tuna_packets(stream, num_channels, num_samples, fre
         num_channels = 9;
     end
     message_length = 80; % is this fixed always?
-    buffer_size = 100;   % this is our internal read buffer.
+    buffer_size = 16384;   % this is our internal read buffer.
+    debug_f = false;
+    safe_f = true;
+    safe_gap_limit = 1;
     
     % We assume that stream is a character vector representing a file path &
     % name or that it is a file handle already opened externally. Only very
@@ -39,28 +39,47 @@ function [mesh_packet] = get_tuna_packets(stream, num_channels, num_samples, fre
     % we have a file stream, lets read and parse
     % we'll read in chunks and parse (in the future should handle continuous
     % streams
+    
+    % let us pre-allocate the data struct
+    fseek(stream, 0, 'eof');
+    data_size = floor(ftell(stream)/message_length);
+    mesh_packet = repmat(struct( ...
+            'id', [], ...
+            'sync', [], ...
+            'button', [], ...
+            'aligned', [], ...
+            'error', [], ...
+            'num_channels', [], ...
+            'num_samples', [], ...
+            'second', [], ...
+            'counter', [], ...
+            'data', []), ...
+        data_size, 1);
     frewind(stream);
-    
-    % if we know that the output is fixed lenth, we could pre-allocate the output?
-    mesh_packet = [];
-    
+        
     % assuming file-like stream
+    pkts_read = 0;
     while (~feof(stream))
         [buffer read_size] = fread(stream, buffer_size*message_length, '*uint8', 0, 'ieee-le');
         if rem(read_size, message_length) ~= 0
             warning('partial packet received? data possibly bad!');
         else
-            for msg_n = 1:floor(read_size/message_length) % implicit trunk?
+            valid_pkts = floor(read_size/message_length);
+            for msg_n = 1:valid_pkts % implicit trunk?
                 buf_pos = (((msg_n-1):msg_n)*message_length) + [1 0];
-                mesh_packet = [mesh_packet; read_mesh_packet(buffer(buf_pos(1):buf_pos(2)), message_length, num_channels, num_samples, frequency)];
-            end    
+                mesh_packet(pkts_read+msg_n) = read_mesh_packet(buffer(buf_pos(1):buf_pos(2)), message_length, num_channels, num_samples);
+            end
+            pkts_read = pkts_read + valid_pkts;
+        end
+        if debug_f
+            fprintf(2,'%d packets read\n', pkts_read);
         end
     end
     
     %
     % internal function for packet reading
     % could be easily refactored out later
-    function [packet] = read_mesh_packet(message, message_length, num_channels, num_samples, frequency)
+    function [packet] = read_mesh_packet(message, message_length, num_channels, num_samples)
         % parse a packet from a binary data stream
 
         % binary masks
@@ -81,7 +100,6 @@ function [mesh_packet] = get_tuna_packets(stream, num_channels, num_samples, fre
         % this is inefficent; we could have a seperate header structarray
         packet.num_channels = num_channels;
         packet.num_samples = num_samples;
-        packet.frequency = frequency;
         packet.second = typecast(message(4:7), 'uint32'); % probably actually uint32
         % packet.second = bitor(message(4), bitshift(message(5), 8));
         % packet.second = bitor(packet.second, bitshift(message(6), 16));
@@ -91,4 +109,13 @@ function [mesh_packet] = get_tuna_packets(stream, num_channels, num_samples, fre
         packet.data = reshape(typecast(packet.data, 'int16'), num_channels, num_samples)'; 
     end
     
+   if safe_f
+       times = [mesh_packet.second];
+       unique_times = unique(times);
+       last_good_time = unique_times(find(diff(unique_times)>safe_gap_limit));
+       bad_packets = times>last_good_time;
+       mesh_packet = mesh_packet(~bad_packets);
+       warning(sprintf('%d packets dropped following a gap in data greater than mesh-second %d.', ...
+                sum(bad_packets), last_good_time));
+   end
 end
