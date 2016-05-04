@@ -29,7 +29,7 @@ In Python, this is TunaDataFrame object. In MATLAB this is a struct-array.
 The dense ND-array functions return the following three objects:
     An ND-array with indexes [SyncronizedSampleTime, TunaNumber, ChannelNumber]
     A state array with the indexes [SyncronizedTime, TunaNumber, DataElement]
-        where DataElement is {id, sync, button, aligned, error, clock_second, counter, seconds};
+        where DataElement is {id, sync, button, aligned, error, second, counter, decimal_second};
     A channel map which maps TunaID -> TunaNumber
 ```
    

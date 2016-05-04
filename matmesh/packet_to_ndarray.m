@@ -8,9 +8,9 @@ function [nd_array, state, channelmap] = packet_to_ndarray(packet, frequency)
 % frequency should be encoded in the data!?
 %
 %
-    if nargin < 2
-        frequency = 200;
-    end
+    % if nargin < 2
+    %     frequency = 200;
+    % end
     safe_f = true;
 
     % we only parse for identical packets (we could handle packets of different sizes)
@@ -20,7 +20,7 @@ function [nd_array, state, channelmap] = packet_to_ndarray(packet, frequency)
     % a way of removing significantly out of time packets (still in sync)
     safe_gap_limit = 1;
     if safe_f
-        times = [packet.clock_second];
+        times = [packet.second];
         unique_times = unique(times);
         last_good_time = unique_times(find(diff(unique_times)>safe_gap_limit));
         if ~isempty(last_good_time)
@@ -31,8 +31,8 @@ function [nd_array, state, channelmap] = packet_to_ndarray(packet, frequency)
         end
     end
     
-    mintime = min([packet.clock_second]);
-    maxtime = max([packet.clock_second]);
+    mintime = min([packet.second]);
+    maxtime = max([packet.second]);
     ids = unique([packet.id]);
     channelmap = [1:numel(ids); ids]'; % could be struct array
     nsamples = (maxtime - mintime + 1) * frequency;
@@ -46,7 +46,7 @@ function [nd_array, state, channelmap] = packet_to_ndarray(packet, frequency)
             continue
         end
         i = channelmap(find(packet(packet_n).id==channelmap(:,2),1));
-        t = (packet(packet_n).clock_second - mintime) * frequency + packet(packet_n).counter;
+        t = (packet(packet_n).second - mintime) * frequency + packet(packet_n).counter;
         nd_array(t:t+(num_samples-1),i,:) = packet(packet_n).data;
 
         state(ceil(t/4),i,:) = [ ...
@@ -55,7 +55,7 @@ function [nd_array, state, channelmap] = packet_to_ndarray(packet, frequency)
                       double(packet(packet_n).button), ...
                       double(packet(packet_n).aligned), ...
                       double(packet(packet_n).error), ...
-                      double(packet(packet_n).clock_second), ...
+                      double(packet(packet_n).second), ...
                       double(packet(packet_n).counter)];
     end
     if (unsync_packets>0)

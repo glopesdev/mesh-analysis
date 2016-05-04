@@ -43,7 +43,7 @@ def frombuffer(data):
         frames.append(TunaDataFrame(message))
     return frames
     
-def timeline(frames,freq=100):
+def timeline(frames,freq):
     mintime = min(frames,key=lambda x:x.second).second
     maxtime = max(frames,key=lambda x:x.second).second
     ids = np.unique([f.id for f in frames])
@@ -62,7 +62,7 @@ def timeline(frames,freq=100):
                           frame.button,
                           frame.aligned,
                           frame.error,
-                          frame.clock_second,
+                          frame.second,
                           frame.counter,
                           t / float(freq)]
     return adc, state, channelmap
