@@ -23,10 +23,12 @@ function [nd_array, state, channelmap] = packet_to_ndarray(packet, frequency)
         times = [packet.second];
         unique_times = unique(times);
         last_good_time = unique_times(find(diff(unique_times)>safe_gap_limit));
-        bad_packets = times>last_good_time;
-        packet = packet(~bad_packets);
-        warning(sprintf('%d packets dropped following a gap in data greater than mesh-second %d.', ...
-                 sum(bad_packets), last_good_time));
+        if ~isempty(last_good_time)
+            bad_packets = times>last_good_time;
+            packet = packet(~bad_packets);
+            warning(sprintf('%d packets dropped following a gap in data greater than mesh-second %d.', ...
+                     sum(bad_packets), last_good_time));
+        end
     end
     
     mintime = min([packet.second]);
@@ -36,9 +38,11 @@ function [nd_array, state, channelmap] = packet_to_ndarray(packet, frequency)
     nsamples = (maxtime - mintime + 1) * frequency;
     nd_array = NaN([nsamples, numel(ids), num_channels]);
     state = NaN([(nsamples / 4), numel(ids), 7]);
+    unsync_packets = 0;
     for packet_n = 1:numel(packet)
         % drop out-of-sync packets
         if (~packet(packet_n).sync)
+            unsync_packets = unsync_packets + 1;
             continue
         end
         i = channelmap(find(packet(packet_n).id==channelmap(:,2),1));
@@ -53,6 +57,9 @@ function [nd_array, state, channelmap] = packet_to_ndarray(packet, frequency)
                       double(packet(packet_n).error), ...
                       double(packet(packet_n).second), ...
                       double(packet(packet_n).counter)];
+    end
+    if (unsync_packets>0)
+        warning(sprintf('%d out-of-sync packets dropped.', unsync_packets));
     end
     state(:,:,8) = ((double(state(:,:,6))*frequency)+double(state(:,:,7)))/frequency;
     
