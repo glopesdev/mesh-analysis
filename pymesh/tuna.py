@@ -62,7 +62,7 @@ def timeline(frames,freq=100):
                           frame.button,
                           frame.aligned,
                           frame.error,
-                          frame.clock_time,
+                          frame.clock_second,
                           frame.counter,
                           t / float(freq)]
     return adc, state, channelmap

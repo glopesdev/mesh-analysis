@@ -49,7 +49,7 @@ function [mesh_packet] = get_tuna_packets(stream, num_channels, num_samples)
             'error', [], ...
             'num_channels', [], ...
             'num_samples', [], ...
-            'second', [], ...
+            'clock_second', [], ...
             'counter', [], ...
             'data', []), ...
         data_size, 1);
@@ -89,7 +89,6 @@ function [mesh_packet] = get_tuna_packets(stream, num_channels, num_samples)
 
         % parse packet
         message_id = typecast(message(2:3), 'uint16'); % probably actually uint16?
-        % message_id = message(2) | bitshift(message(3), 8); % probably actually uint16?
         packet.id = bitand(message_id, id_mask);
         packet.sync = bitand(message_id, sync_flag) ~= 0;
         packet.button = bitand(message_id, button_flag) ~= 0;
@@ -98,10 +97,7 @@ function [mesh_packet] = get_tuna_packets(stream, num_channels, num_samples)
         % this is inefficent; we could have a seperate header structarray
         packet.num_channels = num_channels;
         packet.num_samples = num_samples;
-        packet.second = typecast(message(4:7), 'uint32'); % probably actually uint32
-        % packet.second = bitor(message(4), bitshift(message(5), 8));
-        % packet.second = bitor(packet.second, bitshift(message(6), 16));
-        % packet.second = bitor(packet.second, bitshift(message(7), 24));
+        packet.clock_second = typecast(message(4:7), 'uint32'); % probably actually uint32
         packet.counter = uint32(message(8)); % is this necessary?
         packet.data = message(9:message_length);
         packet.data = reshape(typecast(packet.data, 'int16'), num_channels, num_samples)'; 
