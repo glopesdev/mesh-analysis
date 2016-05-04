@@ -4,7 +4,7 @@
 % Author: Eric DeWitt
 
 %
-% 
+% run exdata/example.m
 
 addpath('matmesh');
 
