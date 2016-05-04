@@ -16,8 +16,6 @@ function [mesh_packet] = get_tuna_packets(stream, num_channels, num_samples)
     message_length = 80; % is this fixed always?
     buffer_size = 16384;   % this is our internal read buffer.
     debug_f = false;
-    safe_f = true;
-    safe_gap_limit = 1;
     
     % We assume that stream is a character vector representing a file path &
     % name or that it is a file handle already opened externally. Only very
@@ -109,13 +107,4 @@ function [mesh_packet] = get_tuna_packets(stream, num_channels, num_samples)
         packet.data = reshape(typecast(packet.data, 'int16'), num_channels, num_samples)'; 
     end
     
-   if safe_f
-       times = [mesh_packet.second];
-       unique_times = unique(times);
-       last_good_time = unique_times(find(diff(unique_times)>safe_gap_limit));
-       bad_packets = times>last_good_time;
-       mesh_packet = mesh_packet(~bad_packets);
-       warning(sprintf('%d packets dropped following a gap in data greater than mesh-second %d.', ...
-                sum(bad_packets), last_good_time));
-   end
 end
