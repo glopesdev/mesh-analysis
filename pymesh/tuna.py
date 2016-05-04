@@ -18,15 +18,13 @@ class TunaDataFrame:
     _NumChannels_ = 9
     
     def __init__(self, message):
-        ## I thnk there is implict casting being done via the bitshifts
-        ## this is opaque and should be made explicit
         messageId = message[1] | message[2] << 8
         self.id = messageId & self._IdMask_
         self.sync = (messageId & self._SyncFlag_) != 0;
         self.button = (messageId & self._ButtonFlag_) != 0;
         self.aligned = (messageId & self._AlignedFlag_) != 0;
         self.error = (messageId & self._ErrorFlag_) != 0;
-        self.clock_time = message[3] | message[4] << 8 |\
+        self.second = message[3] | message[4] << 8 |\
                       message[5] << 16 | message[6] << 24;
         self.counter = message[7]
         self.data = message[8:self._MessageLength_].view(dtype=np.int16)\
@@ -45,17 +43,17 @@ def frombuffer(data):
         frames.append(TunaDataFrame(message))
     return frames
     
-def timeline(frames,freq=200):
-    # I think there is implict casting going on here too?
+def timeline(frames,freq=100):
     mintime = min(frames,key=lambda x:x.second).second
     maxtime = max(frames,key=lambda x:x.second).second
     ids = np.unique([f.id for f in frames])
     channelmap = dict(((x,i) for i,x in enumerate(ids)))
     nsamples = (maxtime - mintime + 1) * freq
     adc = np.full((nsamples,len(ids),TunaDataFrame._NumChannels_),np.NaN)
-    # why 7!?
     state = np.full((nsamples // 4,len(ids),8),np.NaN)
     for frame in frames:
+        if not frame.sync:
+            continue
         i = channelmap[frame.id]
         t = (frame.second - mintime) * freq + frame.counter
         adc[t:t+TunaDataFrame._NumSamples_,i,:] = frame.data
@@ -66,5 +64,5 @@ def timeline(frames,freq=200):
                           frame.error,
                           frame.clock_time,
                           frame.counter,
-                          (frame.clock_time*freq+frame.counter)/freq]
+                          t / float(freq)]
     return adc, state, channelmap
