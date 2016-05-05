@@ -16,8 +16,6 @@ function [mesh_packet] = get_tuna_packets(stream, num_channels, num_samples)
     message_length = 80; % is this fixed always?
     buffer_size = 16384;   % this is our internal read buffer.
     debug_f = false;
-    safe_f = true;
-    safe_gap_limit = 1;
     
     % We assume that stream is a character vector representing a file path &
     % name or that it is a file handle already opened externally. Only very
@@ -91,7 +89,6 @@ function [mesh_packet] = get_tuna_packets(stream, num_channels, num_samples)
 
         % parse packet
         message_id = typecast(message(2:3), 'uint16'); % probably actually uint16?
-        % message_id = message(2) | bitshift(message(3), 8); % probably actually uint16?
         packet.id = bitand(message_id, id_mask);
         packet.sync = bitand(message_id, sync_flag) ~= 0;
         packet.button = bitand(message_id, button_flag) ~= 0;
@@ -101,21 +98,9 @@ function [mesh_packet] = get_tuna_packets(stream, num_channels, num_samples)
         packet.num_channels = num_channels;
         packet.num_samples = num_samples;
         packet.second = typecast(message(4:7), 'uint32'); % probably actually uint32
-        % packet.second = bitor(message(4), bitshift(message(5), 8));
-        % packet.second = bitor(packet.second, bitshift(message(6), 16));
-        % packet.second = bitor(packet.second, bitshift(message(7), 24));
         packet.counter = uint32(message(8)); % is this necessary?
         packet.data = message(9:message_length);
         packet.data = reshape(typecast(packet.data, 'int16'), num_channels, num_samples)'; 
     end
     
-   if safe_f
-       times = [mesh_packet.second];
-       unique_times = unique(times);
-       last_good_time = unique_times(find(diff(unique_times)>safe_gap_limit));
-       bad_packets = times>last_good_time;
-       mesh_packet = mesh_packet(~bad_packets);
-       warning(sprintf('%d packets dropped following a gap in data greater than mesh-second %d.', ...
-                sum(bad_packets), last_good_time));
-   end
 end
