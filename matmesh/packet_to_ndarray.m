@@ -12,6 +12,7 @@ function [nd_array, state, channelmap] = packet_to_ndarray(packet, frequency)
     %     frequency = 200;
     % end
     safe_f = true;
+    max_allocation = 16000000000;
 
     % we only parse for identical packets (we could handle packets of different sizes)
     num_channels = packet(1).num_channels;
@@ -22,9 +23,18 @@ function [nd_array, state, channelmap] = packet_to_ndarray(packet, frequency)
     if safe_f
         times = [packet.second];
         unique_times = unique(times);
-        last_good_time = unique_times(find(diff(unique_times)>safe_gap_limit));
-        if ~isempty(last_good_time)
-            bad_packets = times>last_good_time;
+        bad_time_gap_list = find(diff(unique_times)>safe_gap_limit);
+        if ~isempty(bad_time_gap_list)
+            bad_packets = zeros(size(times));
+            for bad_time_gap = bad_time_gap_list
+                if (bad_time_gap < length(unique_times)/2)
+                    first_good_time = unique_times(bad_time_gap);
+                    bad_packets = bad_packets|times<=first_good_time;
+                else
+                    last_good_time = unique_times(bad_time_gap);
+                    bad_packets = bad_packets|times>last_good_time;
+                end
+            end
             packet = packet(~bad_packets);
             warning(sprintf('%d packets dropped following a gap in data greater than mesh-second %d.', ...
                      sum(bad_packets), last_good_time));
@@ -36,6 +46,9 @@ function [nd_array, state, channelmap] = packet_to_ndarray(packet, frequency)
     ids = unique([packet.id]);
     channelmap = [1:numel(ids); ids]'; % could be struct array
     nsamples = (maxtime - mintime + 1) * frequency;
+    if nsamples*numel(ids)*num_channels*8 > max_allocation
+        error(sprintf('%G bytes requested, greater than limit (%G)', nsamples*numel(ids)*num_channels*8, max_allocation), 'Allocation Error');
+    end
     nd_array = NaN([nsamples, numel(ids), num_channels]);
     state = NaN([(nsamples / 4), numel(ids), 7]);
     unsync_packets = 0;
