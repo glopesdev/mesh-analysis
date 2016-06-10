@@ -24,8 +24,8 @@ class TunaDataFrame:
         self.button = (messageId & self._ButtonFlag_) != 0;
         self.aligned = (messageId & self._AlignedFlag_) != 0;
         self.error = (messageId & self._ErrorFlag_) != 0;
-        self.second = message[3] | message[4] << 8 |\
-                      message[5] << 16 | message[6] << 24;
+        self.second = np.uint32(message[3] | message[4] << 8 |\
+                                message[5] << 16 | message[6] << 24);
         self.counter = message[7]
         self.data = message[8:self._MessageLength_].view(dtype=np.int16)\
                     .reshape((self._NumSamples_,self._NumChannels_))
